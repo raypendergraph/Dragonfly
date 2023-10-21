@@ -1,7 +1,10 @@
 cmake_minimum_required(VERSION 3.26)
 
-project(learning C)
+project(learning)
+
 set(CMAKE_C_STANDARD 11)
+set(DAWN_FETCH_DEPENDENCIES 1)
+
 add_definitions(-DGLFW_EXPOSE_NATIVE_COCOA)
 include_directories(
         ~/thirdparty/usr/local/include
@@ -28,8 +31,16 @@ add_executable(learning
 )
 
 add_subdirectory(Modules/Platform)
-target_link_libraries(learning
+add_subdirectory(External/dawn)
+
+target_link_libraries(learning PRIVATE
         Platform
+        "-framework IOSurface"
+        "-framework Quartz"
+        "-framework Cocoa"
+        "-framework Foundation"
+        "-framework IOKit"
+        "-framework Metal"
         absl_int128
         absl_raw_logging_internal
         absl_str_format_internal
@@ -98,10 +109,4 @@ target_link_libraries(learning
         tint_utils_text
         tint_utils_traits
         webgpu_dawn
-        "-framework IOSurface"
-        "-framework Quartz"
-        "-framework Cocoa"
-        "-framework Foundation"
-        "-framework IOKit"
-        "-framework Metal"
 )

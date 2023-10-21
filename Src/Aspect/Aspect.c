@@ -186,13 +186,14 @@ WGPUSurface aspectNewSurfaceForGLFW(WGPUInstance instance, GLFWwindow *window)
 WGPUShaderModule
 aspectNewWGSLShaderModule(WGPUDevice device, const char *shaderSource, const char *label)
 {
-    const WGPUShaderModuleDescriptor smd = {
-       .label=label,
-       .nextInChain = &(WGPUChainedStruct) {
-          (const WGPUChainedStruct *) &(WGPUShaderModuleWGSLDescriptor) {
-             .chain=&(WGPUChainedStruct) {
-                .sType=WGPUSType_ShaderModuleWGSLDescriptor},
-             .code=shaderSource}}};
+    WGPUShaderModuleDescriptor shaderModuleDesc = {
+       .nextInChain=(const WGPUChainedStruct *) &(WGPUShaderModuleWGSLDescriptor) {
+          .chain={
+             .sType=WGPUSType_ShaderModuleWGSLDescriptor
+          },
+          .code=shaderSource
+       }
+    };
 
-    return wgpuDeviceCreateShaderModule(device, &smd);
+    return wgpuDeviceCreateShaderModule(device, &shaderModuleDesc);
 }
