@@ -1,0 +1,3 @@
+[submodule "External/libxml2"]
+	path = External/libxml2
+	url = https://gitlab.gnome.org/GNOME/libxml2.git
