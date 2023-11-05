@@ -28,13 +28,16 @@ add_executable(learning
         Src/Aspect/Aspect.h
         Src/Aspect/Aspect.c
         Src/Aspect/MetalAdapter.m
+        Src/Aspect/SceneXml.c
 )
 
 add_subdirectory(Modules/Platform)
 add_subdirectory(External/dawn)
+add_subdirectory(External/libxml2)
 
 target_link_libraries(learning PRIVATE
         Platform
+        xml2
         "-framework IOSurface"
         "-framework Quartz"
         "-framework Cocoa"

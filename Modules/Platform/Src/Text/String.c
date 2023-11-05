@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <errno.h>
 #include <stdbool.h>
 #include <string.h>
 #include <stdlib.h>
@@ -17,7 +18,7 @@ struct String
 typedef struct Error Error;
 
 size_t
-pfmRawStringLength(char const *s, size_t max)
+pfmASCIIStringLength(char const *s, size_t max)
 {
 
     assert(s != NULL);
@@ -34,6 +35,106 @@ pfmRawStringLength(char const *s, size_t max)
     return len;
 }
 
+bool
+pfmASCIIStringParseFloat(const char *value, float *outValue, Error **err)
+{
+    if (value == NULL)
+    {
+        REPORT_NULL_FAULT(value, err);
+        return false;
+    }
+
+    if (outValue == NULL)
+    {
+        REPORT_NULL_FAULT(outValue, NULL);
+        return false;
+    }
+
+    char *end;
+
+    errno = 0;
+    float f = strtof(value, &end);
+    if (end == value)
+    {
+        ERRORF(err, 27, "could not convert [%s] to a float", value);
+        return false;
+    }
+
+    *outValue = f;
+    return true;
+}
+
+bool
+pfmASCIIStringParseULong(const char *value, unsigned long *outValue, Error **err)
+{
+    if (value == NULL)
+    {
+        REPORT_NULL_FAULT(value, err);
+        return false;
+    }
+
+    if (outValue == NULL)
+    {
+        REPORT_NULL_FAULT(outValue, NULL);
+        return false;
+    }
+
+    char *end;
+
+    errno = 0;
+    unsigned long l = strtoul(value, &end, 10);
+    if (end == value)
+    {
+        ERRORF(err, 27, "could not convert [%s] to an unsigned long", value);
+        return false;
+    }
+
+    *outValue = l;
+
+    return true;
+}
+
+bool
+pfmASCIIStringInsensitiveCompare(const char *a, const char *b, size_t n)
+{
+    if (a == b)
+    {
+        return true;
+    }
+    if (a == NULL || b == NULL)
+    {
+        return false;
+    }
+
+    for (size_t i = 0; i < n; a++, b++)
+    {
+        // Both strings are done and they are equal
+        if (!*a && !*b)
+        {
+            return true;
+        }
+
+        // a is not a letter
+        if ((*a < 'A' || *a > 'Z') && (*a < 'a' || *a > 'z'))
+        {
+            if (*a == *b)
+            {
+                continue;
+            }
+            return false;
+        }
+
+        // ASCII is written so that:
+        // Uppercase 'A' is 65 in decimal, or 0100 0001 in binary.
+        // Lowercase 'a' is 97 in decimal, or 0110 0001 in binary
+        // So performing an or of 0010 0000 on the character makes it insensitive.
+        if ((*a | 0x20) != (*b | 0x20))
+        {
+            return false;
+        }
+    }
+    return false;
+}
 
 String *
 pfmStringNewFromBuffer(char const *buffer, size_t size, Error **err)
@@ -54,7 +155,7 @@ pfmStringNewFromBuffer(char const *buffer, size_t size, Error **err)
 String *
 pfmStringCreateWithRawString(char const *cString, Error **err)
 {
-    size_t size = pfmRawStringLength(cString, PFM_TEXT_STRING_MAX_SIZE);
+    size_t size = pfmASCIIStringLength(cString, PFM_TEXT_STRING_MAX_SIZE);
     return pfmStringNewFromBuffer(cString, size, err);
 }
 

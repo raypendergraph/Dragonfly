@@ -30,11 +30,20 @@ pfmStringNewFromBuffer(char const *buffer, size_t size, Error **err);
 String *
 pfmStringCreateWithRawString(char const *cString, Error **err);
 ////////////////////////////
-// raw string functions
+// ASCII string functions
 ////////////////////////////
 
 size_t
-pfmRawStringLength(char const *s, size_t max);
+pfmASCIIStringLength(char const *s, size_t max);
+
+bool
+pfmASCIIStringInsensitiveCompare(const char *a, const char *b, size_t len);
+
+bool
+pfmASCIIStringParseFloat(const char *value, float *outValue, Error **err);
+
+bool
+pfmASCIIStringParseULong(const char *value, unsigned long *outValue, Error **err);
 
 /////////////////////////
 // StringBuilder
@@ -55,7 +64,7 @@ void
 pfmStringBuilderAppendChar(StringBuilder *builder, char c, Error **err);
 
 size_t
-pfmStringBuilderAppendRawString(StringBuilder *builder, char const *raw, Error **err);
+pfmStringBuilderAppendString(StringBuilder *builder, char const *raw, Error **err);
 
 size_t
 pfmStringBuilderAppendBuffer(StringBuilder *builder, char const *buffer, size_t size, Error **err);
