@@ -1,31 +1,15 @@
 #include <Platform/Core.h>
 #include <Platform/Text.h>
-#include "Aspect.h"
 #include <assert.h>
 #include <libxml/xmlmemory.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
+#include "Aspect.h"
+#include "Internal.h"
 
 #define XML_API_FAILURE (-1)
 
-
-struct Entity
-{
-   VertexBuffer2D *vertexBuffer;
-   IndexBuffer *indexBuffer;
-};
-
-struct EntityGroup
-{
-   size_t size;
-   Entity data[];
-};
-
-struct Scene
-{
-   EntityGroup *entities;
-};
 
 const char *
 aspectVertexBuffer2dToString(VertexBuffer2D *vb)
@@ -56,8 +40,27 @@ parseAttributeAsFloat(xmlNode *node, const char *attr, float *outValue)
    return pfmASCIIStringParseFloat((const char *) value, outValue, NULL);
 }
 
+//static bool
+//parseVertices2D(VertexBuffer2D *buffer, xmlNode *vertexGroup, Error **err)
+//{
+//   assert(buffer);
+//   assert(vertexGroup);
+//   xmlNodePtr vertexNode = vertexGroup->children;
+//   for (size_t i = 0; vertexNode != NULL; i++)
+//   {
+//      parseAttributeAsFloat(vertexNode, "x", &buffer->data[i].x);
+//      parseAttributeAsFloat(vertexNode, "y", &buffer->data[i].y);
+//      parseAttributeAsFloat(vertexNode, "r", &buffer->data[i].r);
+//      parseAttributeAsFloat(vertexNode, "g", &buffer->data[i].g);
+//      parseAttributeAsFloat(vertexNode, "b", &buffer->data[i].b);
+//      vertexNode = vertexNode->next;
+//   }
+//
+//   return true;
+//}
+
 static bool
-parseVertices2D(VertexBuffer2D *buffer, xmlNode *vertexGroup, Error **err)
+parseVertices(VertexBuffer *buffer, xmlNode *vertexGroup, Error **err)
 {
    assert(buffer);
    assert(vertexGroup);
@@ -66,6 +69,7 @@ parseVertices2D(VertexBuffer2D *buffer, xmlNode *vertexGroup, Error **err)
    {
       parseAttributeAsFloat(vertexNode, "x", &buffer->data[i].x);
       parseAttributeAsFloat(vertexNode, "y", &buffer->data[i].y);
+      parseAttributeAsFloat(vertexNode, "z", &buffer->data[i].z);
       parseAttributeAsFloat(vertexNode, "r", &buffer->data[i].r);
       parseAttributeAsFloat(vertexNode, "g", &buffer->data[i].g);
       parseAttributeAsFloat(vertexNode, "b", &buffer->data[i].b);
@@ -120,10 +124,10 @@ parseEntity(Entity *entity, xmlNode *entityNode, Error **err)
       if (pfmASCIIStringInsensitiveCompare("vertices", (const char *) current->name, 32))
       {
          size_t childCount = xmlChildElementCount(current);
-         VertexBuffer2D *vb = malloc(sizeof(*vb) + sizeof(Vertex2D) * childCount);
+         VertexBuffer *vb = malloc(sizeof(*vb) + sizeof(Vertex) * childCount);
          vb->count = childCount;
          entity->vertexBuffer = vb;
-         if (!parseVertices2D(vb, current, err))
+         if (!parseVertices(vb, current, err))
          {
             goto onFailure;
          }
@@ -166,7 +170,7 @@ parseEntityGroup(EntityGroup *group, xmlNode *groupNode, Error **err)
    assert(group);
    assert(groupNode);
    xmlNodePtr current = groupNode->children;
-   for (size_t i; current != NULL; i++)
+   for (size_t i = 0; current != NULL; i++)
    {
       if (!parseEntity(&group->data[i], current, err))
       {
