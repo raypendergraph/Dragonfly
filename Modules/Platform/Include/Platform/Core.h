@@ -27,23 +27,25 @@
 #define BREAKPOINT() assert(0); /* Fallback to assert(0) for unknown compilers */
 #endif
 
-typedef enum int32_t
+typedef enum
 {
-  PFM_ERR_NONE = 0,
-  PFM_ERR_ALLOC_FAILED = 1,
-  PFM_ERR_NULL_FAULT = 2,
-  PFM_ERR_IO_FAULT = 3
+   PFM_ERR_NONE = 0,
+   PFM_ERR_ALLOC_FAILED = 1,
+   PFM_ERR_NULL_FAULT = 2,
+   PFM_ERR_IO_FAULT = 3
 } PlatformErrorType;
 
 typedef struct ErrorArgs
 {
-  int code;
-  char const *message;
-  char const *file;
-  uint16_t line;
+   int code;
+   char const *message;
+   char const *file;
+   uint16_t line;
 } ErrorArgs;
 
 typedef struct Error Error;
+
+#define FREE(ptr) if (ptr != NULL) free(ptr)
 
 #define REPORT_NULL_FAULT(arg, err) \
 do{ \
@@ -98,11 +100,11 @@ typedef struct Logger Logger;
 
 typedef enum
 {
-  LOGLEVEL_ERROR = 0,
-  LOGLEVEL_WARNING = 1,
-  LOGLEVEL_INFO = 2,
-  LOGLEVEL_DEBUG = 3,
-  LOGLEVEL_COUNT = 4
+   LOGLEVEL_ERROR = 0,
+   LOGLEVEL_WARNING = 1,
+   LOGLEVEL_INFO = 2,
+   LOGLEVEL_DEBUG = 3,
+   LOGLEVEL_COUNT = 4
 } LogLevelType;
 
 typedef struct LoggerConfig LoggerConfig;

@@ -5,7 +5,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
-#include "Aspect.h"
 #include "Internal.h"
 
 #define XML_API_FAILURE (-1)
@@ -40,24 +39,6 @@ parseAttributeAsFloat(xmlNode *node, const char *attr, float *outValue)
    return pfmASCIIStringParseFloat((const char *) value, outValue, NULL);
 }
 
-//static bool
-//parseVertices2D(VertexBuffer2D *buffer, xmlNode *vertexGroup, Error **err)
-//{
-//   assert(buffer);
-//   assert(vertexGroup);
-//   xmlNodePtr vertexNode = vertexGroup->children;
-//   for (size_t i = 0; vertexNode != NULL; i++)
-//   {
-//      parseAttributeAsFloat(vertexNode, "x", &buffer->data[i].x);
-//      parseAttributeAsFloat(vertexNode, "y", &buffer->data[i].y);
-//      parseAttributeAsFloat(vertexNode, "r", &buffer->data[i].r);
-//      parseAttributeAsFloat(vertexNode, "g", &buffer->data[i].g);
-//      parseAttributeAsFloat(vertexNode, "b", &buffer->data[i].b);
-//      vertexNode = vertexNode->next;
-//   }
-//
-//   return true;
-//}
 
 static bool
 parseVertices(VertexBuffer *buffer, xmlNode *vertexGroup, Error **err)
@@ -116,7 +97,7 @@ parseIndices(IndexBuffer *buffer, xmlNode *indexGroup, Error **err)
 }
 
 static bool
-parseEntity(Entity *entity, xmlNode *entityNode, Error **err)
+parseEntity(AspectEntity *entity, xmlNode *entityNode, Error **err)
 {
    xmlNode *current = entityNode->children;
    while (current != NULL)
@@ -165,7 +146,7 @@ parseEntity(Entity *entity, xmlNode *entityNode, Error **err)
 }
 
 static bool
-parseEntityGroup(EntityGroup *group, xmlNode *groupNode, Error **err)
+parseEntityGroup(AspectEntityGroup *group, xmlNode *groupNode, Error **err)
 {
    assert(group);
    assert(groupNode);
@@ -182,7 +163,7 @@ parseEntityGroup(EntityGroup *group, xmlNode *groupNode, Error **err)
 }
 
 static bool
-parseScene(Scene *scene, xmlNode *sceneNode, Error **err)
+parseScene(AspectScene *scene, xmlNode *sceneNode, Error **err)
 {
    assert(sceneNode);
    assert(scene);
@@ -193,7 +174,7 @@ parseScene(Scene *scene, xmlNode *sceneNode, Error **err)
       if (pfmASCIIStringInsensitiveCompare("entities", (const char *) current->name, 32))
       {
          size_t entityCount = xmlChildElementCount(current);
-         EntityGroup *eg = malloc(sizeof(*scene->entities) + entityCount * sizeof(Entity));
+         AspectEntityGroup *eg = malloc(sizeof(*scene->entities) + entityCount * sizeof(AspectEntity));
          eg->size = entityCount;
          scene->entities = eg;
          if (!parseEntityGroup(eg, current, err))
@@ -217,10 +198,10 @@ parseScene(Scene *scene, xmlNode *sceneNode, Error **err)
    return false;
 }
 
-Scene *
-aspectSceneCreateFromFile(char *fileName, Error **err)
+AspectScene *
+aspectSceneNewFromFile(char *fileName, Error **err)
 {
-   Scene *scene = NULL;
+   AspectScene *scene = NULL;
    xmlDoc *doc = NULL;
 
    doc = xmlReadFile(fileName, NULL, XML_PARSE_NOBLANKS);
@@ -318,7 +299,7 @@ aspectVertexBuffer2dCopy(VertexBuffer2D *src, VertexBuffer2D *dst, size_t dstOff
 }
 
 bool
-aspectSceneBuildGeometry2D(Scene *scene, VertexBuffer2D **outVertices, IndexBuffer **outIndices, Error **err)
+sceneBuildGeometry2D(AspectScene *scene, VertexBuffer2D **outVertices, IndexBuffer **outIndices, Error **err)
 {
    if (scene == NULL)
    {
@@ -336,7 +317,7 @@ aspectSceneBuildGeometry2D(Scene *scene, VertexBuffer2D **outVertices, IndexBuff
       return false;
    }
    size_t entityCount = scene->entities->size;
-   Entity *entities = scene->entities->data;
+   AspectEntity *entities = scene->entities->data;
    size_t vertexCount = 0;
    size_t indexCount = 0;
    for (size_t i = 0; i < entityCount; i++)

@@ -1,6 +1,7 @@
-#include "Internal.h"
+#include <webgpu/webgpu.h>
+#include <stdio.h>
 
-const char *aspectQueueWorkDoneStatusGetString(WGPUQueueWorkDoneStatus status)
+const char *queueWorkDoneStatusGetString(WGPUQueueWorkDoneStatus status)
 {
    switch (status)
    {
@@ -17,7 +18,7 @@ const char *aspectQueueWorkDoneStatusGetString(WGPUQueueWorkDoneStatus status)
    }
 }
 
-const char *aspectDeviceLostReasonGetString(WGPUDeviceLostReason reason)
+const char *deviceLostReasonGetString(WGPUDeviceLostReason reason)
 {
    switch (reason)
    {
@@ -31,7 +32,7 @@ const char *aspectDeviceLostReasonGetString(WGPUDeviceLostReason reason)
    }
 }
 
-const char *aspectErrorTypeGetString(WGPUErrorType type)
+const char *errorTypeGetString(WGPUErrorType type)
 {
    switch (type)
    {
@@ -52,7 +53,7 @@ const char *aspectErrorTypeGetString(WGPUErrorType type)
    }
 }
 
-const char *aspectFeatureNameGetString(WGPUFeatureName featureName)
+const char *featureNameGetString(WGPUFeatureName featureName)
 {
    switch (featureName)
    {
@@ -159,7 +160,7 @@ const char *aspectFeatureNameGetString(WGPUFeatureName featureName)
    }
 }
 
-void aspectAdapterPrintFeatures(WGPUAdapter adapter)
+void adapterPrintFeatures(WGPUAdapter adapter)
 {
    size_t featureCount = wgpuAdapterEnumerateFeatures(adapter, NULL);
    WGPUFeatureName features[featureCount];
@@ -168,31 +169,7 @@ void aspectAdapterPrintFeatures(WGPUAdapter adapter)
    printf("Adapter features:\n");
    for (size_t i = 0; i < featureCount; i += 1)
    {
-      printf("%s\n", aspectFeatureNameGetString(features[i]));
+      printf("%s\n", featureNameGetString(features[i]));
    }
-}
-
-WGPUSurface newMetalSurface(WGPUInstance instance, GLFWwindow *window);
-
-WGPUSurface aspectNewSurfaceForGLFW(WGPUInstance instance, GLFWwindow *window)
-{
-#ifdef __APPLE__
-   return newMetalSurface(instance, window);
-#endif
-}
-
-WGPUShaderModule
-aspectNewWGSLShaderModule(WGPUDevice device, const char *shaderSource, const char *label)
-{
-   WGPUShaderModuleDescriptor shaderModuleDesc = {
-      .nextInChain=(const WGPUChainedStruct *) &(WGPUShaderModuleWGSLDescriptor) {
-         .chain={
-            .sType=WGPUSType_ShaderModuleWGSLDescriptor
-         },
-         .code=shaderSource
-      }
-   };
-
-   return wgpuDeviceCreateShaderModule(device, &shaderModuleDesc);
 }
 

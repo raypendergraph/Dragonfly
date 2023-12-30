@@ -14,6 +14,8 @@ add_library(Platform STATIC
         Src/Text/String.c
         Src/Text/StringBuilder.c
         Src/IO/File.c
+        Src/Codec/PNG.c
+        Include/Platform/Codec.h
 )
 target_include_directories(Platform PUBLIC Src)
 #set_target_properties(Platform PROPERTIES

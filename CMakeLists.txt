@@ -7,12 +7,15 @@ set(DAWN_FETCH_DEPENDENCIES 1)
 
 add_definitions(-DGLFW_EXPOSE_NATIVE_COCOA)
 include_directories(
+        /usr/local/include
         ~/thirdparty/usr/local/include
         ~/thirdparty/usr/local/
         ~/thirdparty/dawn/include
-        ~/thirdparty/dawn/out/Debug/gen/include)
+        ~/thirdparty/dawn/out/Debug/gen/include
+        External/HandmadeMath)
 
 link_directories(
+        /usr/local/lib
         ~/thirdparty/usr/local/lib
         ~/thirdparty/dawn/out/Debug/src/dawn/common/
         ~/thirdparty/dawn/out/Debug/src/dawn/platform/
@@ -26,9 +29,22 @@ link_directories(
 add_executable(learning
         Src/main.c
         Src/Aspect/Aspect.h
-        Src/Aspect/Aspect.c
         Src/Aspect/MetalAdapter.m
-        Src/Aspect/SceneXml.c
+        Src/Aspect/Scene.c
+        Src/Aspect/Renderer.c
+        Src/Aspect/Camera.c
+        Src/Aspect/Material.c
+        Src/Aspect/Internal.h
+        Src/Aspect/Types.h
+        Src/Aspect/AspectGLFW.c
+        Src/Aspect/RenderContext.c
+        Src/Aspect/Scene.h
+        Src/Aspect/Renderer.h
+        Src/Aspect/PlatformSpecifics.c
+        Src/Aspect/PlatformSpecifics.h
+        Src/Aspect/Material.h
+        Src/Aspect/RenderContext.h
+        Src/Aspect/WGPUUtils.c
 )
 
 add_subdirectory(Modules/Platform)
@@ -37,6 +53,7 @@ add_subdirectory(External/libxml2)
 
 target_link_libraries(learning PRIVATE
         Platform
+        spng
         xml2
         "-framework IOSurface"
         "-framework Quartz"
