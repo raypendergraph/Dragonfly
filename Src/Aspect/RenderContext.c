@@ -9,6 +9,7 @@
 #include "Scene.h"
 #include "HandmadeMath.h"
 
+
 AspectMaterial *
 aspectMaterialNewFromFile(WGPUDevice device, char const *path, Error **err);
 
@@ -144,6 +145,7 @@ createRenderPipeline(AspectRenderer *renderer, AspectRenderContext *ctx, Error *
             {
                .arrayStride=24,
                .attributeCount=2,
+               .stepMode=WGPUVertexStepMode_Vertex,
                .attributes=(WGPUVertexAttribute[2]) {
                   {
                      .shaderLocation=0,
@@ -177,9 +179,13 @@ createRenderPipeline(AspectRenderer *renderer, AspectRenderContext *ctx, Error *
 //                  }
 //               },
                .format=WGPUTextureFormat_BGRA8Unorm,
-               .writeMask=WGPUColorWriteMask_All}}},
+               .writeMask=WGPUColorWriteMask_All
+            }
+         }
+      },
       .primitive=(WGPUPrimitiveState) {
-         .topology=WGPUPrimitiveTopology_TriangleList},
+         .topology=WGPUPrimitiveTopology_TriangleList,
+      },
       .layout=pipelineLayout
    };
    pipeline = wgpuDeviceCreateRenderPipeline(renderer->device, &d);
@@ -599,11 +605,13 @@ aspectRenderContextRender(AspectRenderContext *ctx, Error **err)
       commandEncoder,
       &(WGPURenderPassDescriptor) {
          .colorAttachmentCount=1,
-         .colorAttachments=&(WGPURenderPassColorAttachment) {
-            .view=currentTexture,
-            .loadOp=WGPULoadOp_Clear,
-            .storeOp=WGPUStoreOp_Store,
-            .clearValue={.2, 0.1, 0.2, 1}
+         .colorAttachments=(WGPURenderPassColorAttachment[1]) {
+            {
+               .view=currentTexture,
+               .loadOp=WGPULoadOp_Clear,
+               .storeOp=WGPUStoreOp_Store,
+               .clearValue={.2, 0.4, 0.2, .5}
+            }
          },
          //.depthStencilAttachment = &ctx->depthStencilAttachment
       });
@@ -613,23 +621,9 @@ aspectRenderContextRender(AspectRenderContext *ctx, Error **err)
       REPORT_NULL_FAULT(renderPass, err);
       goto onFailure;
    }
-/*
- *         this.device.queue.writeBuffer(
-            this.objectBuffer, 0,
-            renderables.model_transforms, 0,
-            renderables.model_transforms.length
-        );
-        this.device.queue.writeBuffer(this.uniformBuffer, 0, <ArrayBuffer>view);
-        this.device.queue.writeBuffer(this.uniformBuffer, 64, <ArrayBuffer>projection);
- */
    wgpuRenderPassEncoderSetPipeline(renderPass, ctx->pipeline);
-//   wgpuRenderPassEncoderSetVertexBuffer(renderPassEncoder, 0, ctx->vertexBuffer, 0,
-//                                        sizeof(*ctx->vertices->data) * ctx->vertices->count);
-//   wgpuRenderPassEncoderSetIndexBuffer(renderPassEncoder, ctx->indexBuffer, WGPUIndexFormat_Uint32, 0,
-//                                       sizeof(*ctx->indices->data) * ctx->indices->count);
    wgpuRenderPassEncoderSetVertexBuffer(renderPass, 0, ctx->vertexBuffer, 0, 72);
    wgpuRenderPassEncoderSetBindGroup(renderPass, 0, ctx->tempBindGroup, 0, NULL);
-//   wgpuRenderPassEncoderDrawIndexed(renderPassEncoder, ctx->indices->count, 1, 0, 0, 0);
    wgpuRenderPassEncoderDraw(renderPass, 3, 1, 0, 0);
    wgpuRenderPassEncoderEnd(renderPass);
    WGPUCommandBuffer command = wgpuCommandEncoderFinish(commandEncoder,

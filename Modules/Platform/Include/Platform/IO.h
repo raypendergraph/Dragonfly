@@ -14,7 +14,7 @@ typedef struct Error Error;
  * IOStaticBuffer is a simple memory buffer that is allocated and passed around. It is not changed once
  * allocated.
  */
-typedef struct
+typedef struct IOStaticBuffer
 {
    size_t length;
    uint8_t data[];

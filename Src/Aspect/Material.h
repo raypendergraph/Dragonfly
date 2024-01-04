@@ -16,4 +16,7 @@ typedef struct AspectMaterial
 bool
 materialGetWGPUTexture(AspectMaterial *material, WGPUTexture *texture, Error **err);
 
+AspectMaterial *
+aspectMaterialNewTest(WGPUDevice device, size_t width, size_t height, Error **err);
+
 #endif

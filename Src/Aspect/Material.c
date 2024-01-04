@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <webgpu/webgpu.h>
 
+
 bool
 materialGetWGPUTexture(AspectMaterial *material, WGPUTexture *texture, Error **err)
 {
@@ -23,7 +24,7 @@ materialGetWGPUTexture(AspectMaterial *material, WGPUTexture *texture, Error **e
    return true;
 }
 
-void aspectAspectMaterialDestroy(AspectMaterial *mat)
+void aspectMaterialDestroy(AspectMaterial *mat)
 {
    if (mat == NULL)
    {
@@ -75,7 +76,7 @@ aspectMaterialNewFromBuffer(WGPUDevice device, IOStaticBuffer const *buffer, Err
       goto onFailure;
    }
    material->texture = wgpuDeviceCreateTexture(device, &(WGPUTextureDescriptor) {
-      .format=WGPUTextureFormat_RGBA8Unorm,
+      .format=WGPUTextureFormat_BGRA8Unorm,
       .dimension=WGPUTextureDimension_2D,
       .size = (WGPUExtent3D) {
          .width=material->png->width,
@@ -95,9 +96,9 @@ aspectMaterialNewFromBuffer(WGPUDevice device, IOStaticBuffer const *buffer, Err
 
 
    material->textureView = wgpuTextureCreateView(material->texture, &(WGPUTextureViewDescriptor) {
-      .format=WGPUTextureFormat_RGBA8Unorm,
-      .dimension=WGPUTextureViewDimension_2D,
       .aspect=WGPUTextureAspect_All,
+      .format=WGPUTextureFormat_BGRA8Unorm,
+      .dimension=WGPUTextureViewDimension_2D,
       .mipLevelCount=1,
       .arrayLayerCount=1
    });
@@ -147,7 +148,80 @@ aspectMaterialNewFromBuffer(WGPUDevice device, IOStaticBuffer const *buffer, Err
 //   return material;
 
    onFailure:
-   aspectAspectMaterialDestroy(material);
+   aspectMaterialDestroy(material);
+   return false;
+}
+
+AspectMaterial *
+aspectMaterialNewTest(WGPUDevice device, size_t width, size_t height, Error **err)
+{
+   AspectMaterial *material = malloc(sizeof(AspectMaterial));
+   if (material == NULL)
+   {
+      ERROR(err, PFM_ERR_ALLOC_FAILED, "material");
+      goto onFailure;
+   }
+
+   material->png = codecDecodedPNGNewTest(width, height, err);
+   if (material->png == NULL)
+   {
+      goto onFailure;
+   }
+
+   material->texture = wgpuDeviceCreateTexture(device, &(WGPUTextureDescriptor) {
+      .format=WGPUTextureFormat_BGRA8Unorm,
+      .dimension=WGPUTextureDimension_2D,
+      .size = (WGPUExtent3D) {
+         .width=material->png->width,
+         .height=material->png->height,
+         .depthOrArrayLayers=1
+      },
+      .mipLevelCount=1,
+      .sampleCount=1,
+      .label="hot damn",
+      .usage=WGPUTextureUsage_TextureBinding | WGPUTextureUsage_CopyDst | WGPUTextureUsage_RenderAttachment
+   });
+
+   if (material->texture == NULL)
+   {
+      REPORT_NULL_FAULT(material->texture, err);
+      goto onFailure;
+   }
+
+   material->textureView = wgpuTextureCreateView(material->texture, &(WGPUTextureViewDescriptor) {
+      .aspect=WGPUTextureAspect_All,
+      .format=WGPUTextureFormat_BGRA8Unorm,
+      .dimension=WGPUTextureViewDimension_2D,
+      .mipLevelCount=1,
+      .arrayLayerCount=1
+   });
+
+   if (material->textureView == NULL)
+   {
+      REPORT_NULL_FAULT(material->textureView, err);
+      goto onFailure;
+   }
+
+
+   material->sampler = wgpuDeviceCreateSampler(device, &(WGPUSamplerDescriptor) {
+      //.addressModeU=WGPUAddressMode_Repeat,
+      //.addressModeV=WGPUAddressMode_Repeat,
+//      .magFilter=WGPUFilterMode_Linear,
+//      .minFilter=WGPUFilterMode_Nearest,
+//      .mipmapFilter=WGPUMipmapFilterMode_Nearest,
+      .maxAnisotropy=1,
+   });
+
+   if (material->sampler == NULL)
+   {
+      REPORT_NULL_FAULT(material->sampler, err);
+      goto onFailure;
+   }
+
+   return material;
+
+   onFailure:
+   aspectMaterialDestroy(material);
    return false;
 }
 
@@ -215,13 +289,15 @@ aspectMaterialWriteToQueue(AspectRenderer *ctx, AspectMaterial *material, Error 
 
    WGPUImageCopyTexture destination = {
       .texture=material->texture,
+      .mipLevel=0,
+      .aspect=WGPUTextureAspect_All
    };
 
    CodecDecodedPNG *png = material->png;
 
    WGPUTextureDataLayout source = {
       .bytesPerRow = 4 * png->width,
-      .rowsPerImage = png->height
+      .rowsPerImage = png->height,
    };
 
    uint8_t *textureData;
@@ -236,6 +312,6 @@ aspectMaterialWriteToQueue(AspectRenderer *ctx, AspectMaterial *material, Error 
                          textureData,
                          textureSize,
                          &source,
-                         &(WGPUExtent3D) {.width=png->width, .height=png->height});
+                         &(WGPUExtent3D) {.width=png->width, .height=png->height, .depthOrArrayLayers=1});
    return true;
 }

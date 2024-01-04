@@ -64,6 +64,9 @@ typedef enum uint16_t
 CodecDecodedPNG *
 codecDecodedPNGNew(IOStaticBuffer const *buffer, Error **err);
 
+CodecDecodedPNG *
+codecDecodedPNGNewTest(size_t width, size_t height, Error **err);
+
 bool
 codecDecodedPNGGetData(CodecDecodedPNG const *png, uint8_t **outData, size_t *outSize, Error **err);
 

@@ -37,6 +37,39 @@ codecDecodedPNGGetData(CodecDecodedPNG const *png, uint8_t **outData, size_t *ou
 }
 
 CodecDecodedPNG *
+codecDecodedPNGNewTest(size_t width, size_t height, Error **err)
+{
+   size_t imageSize = 4 * width * height;
+   PrivateCodecDecodedPNG *out = malloc(sizeof(PrivateCodecDecodedPNG) + imageSize);
+   if (out == NULL)
+   {
+      ERROR(err, PFM_ERR_ALLOC_FAILED, "could not create out");
+      return NULL;
+   }
+   out->dataSize = imageSize;
+   for (size_t i = 0; i < width; ++i)
+   {
+      for (size_t j = 0; j < height; ++j)
+      {
+         uint8_t *p = &out->data[4 * (j * width + i)];
+         p[0] = 128; // b
+         p[1] = (uint8_t) j; // g
+         p[2] = (uint8_t) i; // r
+         p[3] = 255; // a
+      }
+   }
+   out->public = (CodecDecodedPNG) {
+      .color = CODEC_PNG_COLOR_TYPE_TRUECOLOR_ALPHA,
+      .height=height,
+      .width=width,
+      .depth=8,
+      .interlace=CODEC_PNG_INTERLACE_NONE
+   };
+
+   return (CodecDecodedPNG *) out;
+}
+
+CodecDecodedPNG *
 codecDecodedPNGNew(IOStaticBuffer const *buffer, Error **err)
 {
    if (buffer == NULL)

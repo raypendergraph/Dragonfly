@@ -66,6 +66,9 @@ aspectVertexBuffer2dToString(VertexBuffer2D *vb);
 Material *
 aspectMaterialNewFromFile(WGPUDevice device, char const *path, Error **err);
 
+AspectMaterial *
+aspectMaterialNewTest(WGPUDevice device, size_t width, size_t height, Error **err);
+
 bool
 aspectMaterialGetData(AspectMaterial *material, uint8_t **data, size_t *size, Error **err);
 
