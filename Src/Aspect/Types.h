@@ -58,4 +58,4 @@ typedef struct IndexBuffer
    size_t count;
    uint32_t data[];
 } IndexBuffer;
-#endif //ASPECT_TYPES_H
+#endif

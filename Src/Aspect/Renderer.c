@@ -312,21 +312,21 @@ aspectRendererNew(AspectRendererOptions options, AspectPlatformSpecifics *specif
       goto onFailure;
    }
 
-   WGPUDeviceDescriptor dd = {
-      .requiredLimits=&(WGPURequiredLimits) {
-         .limits=(WGPULimits) {
-            .maxBufferSize=6 * 6 * sizeof(float), // six 2D data
-            .maxInterStageShaderComponents=3,
-            .maxVertexAttributes=2,
-            .maxVertexBufferArrayStride=5 * sizeof(float),
-            .maxVertexBuffers=1,
-            .maxBindGroups=1,
-            .maxUniformBuffersPerShaderStage=1,
-            .maxUniformBufferBindingSize= 16 * 4,
-            .minStorageBufferOffsetAlignment=supportedLimits.limits.minStorageBufferOffsetAlignment,
-            .minUniformBufferOffsetAlignment=supportedLimits.limits.minStorageBufferOffsetAlignment}}};
+//   WGPUDeviceDescriptor dd = {
+//      .requiredLimits=&(WGPURequiredLimits) {
+//         .limits=(WGPULimits) {
+//            .maxBufferSize=6 * 6 * sizeof(float), // six 2D data
+//            .maxInterStageShaderComponents=3,
+//            .maxVertexAttributes=3,
+//            .maxVertexBufferArrayStride=5 * sizeof(float),
+//            .maxVertexBuffers=1,
+//            .maxBindGroups=1,
+//            .maxUniformBuffersPerShaderStage=1,
+//            .maxUniformBufferBindingSize= 16 * 4,
+//            .minStorageBufferOffsetAlignment=supportedLimits.limits.minStorageBufferOffsetAlignment,
+//            .minUniformBufferOffsetAlignment=supportedLimits.limits.minStorageBufferOffsetAlignment}}};
 
-   renderer->device = createDevice(renderer->adapter, &dd, err);
+   renderer->device = createDevice(renderer->adapter, NULL, err);
    if (renderer->device == NULL)
    {
       REPORT_NULL_FAULT(renderer->device, err);
@@ -349,8 +349,8 @@ aspectRendererNew(AspectRendererOptions options, AspectPlatformSpecifics *specif
       renderer->device,
       specifics->surface,
       &(WGPUSwapChainDescriptor) {
-         .width=640,
-         .height=480,
+         .width=800,
+         .height=600,
          .format=WGPUTextureFormat_BGRA8Unorm,
          .usage=WGPUTextureUsage_RenderAttachment,
          .presentMode=WGPUPresentMode_Fifo

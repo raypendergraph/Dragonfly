@@ -225,6 +225,12 @@ createAdapter(WGPUInstance instance, WGPURequestAdapterOptions const *options)
    return adapterReq->adapter;
 }
 
+static void
+keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods)
+{
+   AspectRenderContext *ctx = glfwGetWindowUserPointer(window);
+   aspectRenderContextHandleKeypress(ctx, key, scancode, action, mods);
+}
 
 int
 main(int argc, char **argv)
@@ -246,14 +252,13 @@ main(int argc, char **argv)
    assert(specifics);
    AspectRenderer *renderer = aspectRendererNew((AspectRendererOptions) {}, specifics, err);
    assert(renderer);
-
-   // Upload the initial value of the uniforms
-   MyUniforms uniforms = {};
-
+   glfwSetWindowUserPointer(window, renderer);
+   glfwSetKeyCallback(window, keyCallback);
    AspectRenderContext *ctx = aspectRenderContextNew(renderer, scene, err);
    while (!glfwWindowShouldClose(window))
    {
       glfwPollEvents();
+      aspectRenderContextOnUpdate(ctx);
       aspectRenderContextRender(ctx, err);
    }
 

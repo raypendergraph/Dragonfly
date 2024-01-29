@@ -88,4 +88,10 @@ aspectRenderContextNew(AspectRenderer *renderer,
 bool
 aspectRenderContextRender(AspectRenderContext *ctx, Error **err);
 
+void
+aspectRenderContextOnUpdate(AspectRenderContext *ctx);
+
+void
+aspectRenderContextHandleKeypress(AspectRenderContext *ctx, int key, int scancode, int action, int mods);
+
 #endif

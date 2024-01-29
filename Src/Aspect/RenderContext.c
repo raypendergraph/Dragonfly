@@ -8,7 +8,27 @@
 #include "Material.h"
 #include "Scene.h"
 #include "HandmadeMath.h"
+#include "SceneNodeIterator.h"
+#include <GLFW/glfw3.h>
 
+struct SceneNodeIterator *
+aspectRenderContextNewSceneNodeIterator(AspectRenderContext *ctx, Error **err)
+{
+   struct SceneNodeIterator *it =
+      malloc(sizeof(struct SceneNodeIterator) + ctx->sceneDepth * sizeof(StackFrame));
+   if (it == NULL)
+   {
+      ERROR(err, PFM_ERR_ALLOC_FAILED, "it");
+      return NULL;
+   }
+
+   it->stack[0] = (StackFrame) {
+      .array = ctx->nodes,
+      .count = ctx->nodeCount
+   };
+
+   return it;
+}
 
 AspectMaterial *
 aspectMaterialNewFromFile(WGPUDevice device, char const *path, Error **err);
@@ -56,81 +76,6 @@ createRenderPipeline(AspectRenderer *renderer, AspectRenderContext *ctx, Error *
       .label="Shader Module"
    });
 
-//   WGPURenderPipelineDescriptor d = {
-//      .label="renderPipeline",
-//      .layout=pipelineLayout,
-//      .depthStencil = &(WGPUDepthStencilState) { // Describes the optional depth-stencil properties, including the testing, operations, and bias.
-//         .format = WGPUTextureFormat_Depth24Plus, // The special format of the depth "Texture".
-//         .depthWriteEnabled=true, // Take action after a pixel has been identified.
-//         .depthCompare=WGPUCompareFunction_Less, //How pixels are discriminated.
-//         .stencilReadMask=0, // Logical bitwise filter of what to sample off.
-//         .stencilWriteMask=0, // Logical bitwise filter of what to write back.
-//         .depthBias=0, // Constant depth bias added to each fragment.
-//         .depthBiasSlopeScale=0, // Depth bias that scales with the fragment’s slope.
-//         .depthBiasClamp=0, // The maximum depth bias of a fragment.
-//         .stencilFront=(WGPUStencilFaceState) { // describe how stencil comparisons and operations are performed
-//            .compare = WGPUCompareFunction_Always, // The GPUCompareFunction used when testing fragments against depthStencilAttachment stencil values.
-//            .failOp = WGPUStencilOperation_Keep, // The GPUStencilOperation performed if the fragment stencil comparison test described by compare fails.
-//            .depthFailOp = WGPUStencilOperation_Keep, // The GPUStencilOperation performed if the fragment depth comparison described by depthCompare fails.
-//            .passOp = WGPUStencilOperation_Keep, // The GPUStencilOperation performed if the fragment stencil comparison test described by compare passes.
-//         },
-//         .stencilBack=(WGPUStencilFaceState) {
-//            .compare = WGPUCompareFunction_Always,
-//            .failOp = WGPUStencilOperation_Keep,
-//            .depthFailOp = WGPUStencilOperation_Keep,
-//            .passOp = WGPUStencilOperation_Keep,
-//         },
-//      },
-//      .multisample=(WGPUMultisampleState) { // describe how a GPURenderPipeline interacts with a render pass’s multisampled attachments
-//         .count=1, // Number of samples per pixel.
-//         .mask=~0u,
-//      },
-//      .vertex=(const WGPUVertexState) {
-//         .module=shaderModule,
-//         .entryPoint="vs_main",
-//         .bufferCount=1,
-//         .buffers=&(WGPUVertexBufferLayout) {
-//            .arrayStride=6 * sizeof(float),
-//            .stepMode=WGPUVertexStepMode_Vertex,
-//            .attributeCount=2,
-//            .attributes=(WGPUVertexAttribute[2]) {
-//               {
-//                  .shaderLocation=0,
-//                  .format=WGPUVertexFormat_Float32x3,
-//                  .offset=0
-//               },
-//               {
-//                  .shaderLocation=1,
-//                  .format=WGPUVertexFormat_Float32x3,
-//                  .offset=3 * sizeof(float)
-//               }
-//            }}},
-//      .fragment=&(const WGPUFragmentState) {
-//         .entryPoint="fs_main",
-//         .module=shaderModule,
-//         .targetCount=1,
-//         .targets=(const WGPUColorTargetState[1]) {
-//            {
-//               .format=WGPUTextureFormat_BGRA8Unorm,
-//               .writeMask=WGPUColorWriteMask_All,
-//               .blend = &(WGPUBlendState) {
-//                  .color={
-//                     .srcFactor=WGPUBlendFactor_SrcAlpha,
-//                     .dstFactor=WGPUBlendFactor_OneMinusSrcAlpha,
-//                     .operation=WGPUBlendOperation_Add},
-//                  .alpha={
-//                     .srcFactor=WGPUBlendFactor_Zero,
-//                     .dstFactor=WGPUBlendFactor_One,
-//                     .operation=WGPUBlendOperation_Add}}
-//            }
-//         }},
-//      .primitive=(const WGPUPrimitiveState) {
-//         .topology=WGPUPrimitiveTopology_TriangleList,
-//         .stripIndexFormat=WGPUIndexFormat_Undefined,
-//         .frontFace=WGPUFrontFace_CCW,
-//         .cullMode=WGPUCullMode_None
-//
-//      }};
 
    WGPURenderPipelineDescriptor d = {
       .multisample=(WGPUMultisampleState) { // describe how a GPURenderPipeline interacts with a render pass’s multisampled attachments
@@ -143,9 +88,8 @@ createRenderPipeline(AspectRenderer *renderer, AspectRenderContext *ctx, Error *
          .bufferCount=1,
          .buffers = (WGPUVertexBufferLayout[1]) {
             {
-               .arrayStride=24,
+               .arrayStride=20,
                .attributeCount=2,
-               .stepMode=WGPUVertexStepMode_Vertex,
                .attributes=(WGPUVertexAttribute[2]) {
                   {
                      .shaderLocation=0,
@@ -153,7 +97,7 @@ createRenderPipeline(AspectRenderer *renderer, AspectRenderContext *ctx, Error *
                      .offset=0},
                   {
                      .shaderLocation=1,
-                     .format=WGPUVertexFormat_Float32x3,
+                     .format=WGPUVertexFormat_Float32x2,
                      .offset=12
                   }
                }
@@ -166,18 +110,6 @@ createRenderPipeline(AspectRenderer *renderer, AspectRenderContext *ctx, Error *
          .targetCount=1,
          .targets=(WGPUColorTargetState[1]) {
             {
-//               .blend=&(WGPUBlendState) {
-//                  .color=(WGPUBlendComponent) {
-//                     .srcFactor=WGPUBlendFactor_SrcAlpha,
-//                     .dstFactor=WGPUBlendFactor_OneMinusSrcAlpha,
-//                     .operation=WGPUBlendOperation_Add
-//                  },
-//                  .alpha=(WGPUBlendComponent) {
-//                     .srcFactor=WGPUBlendFactor_Zero,
-//                     .dstFactor=WGPUBlendFactor_One,
-//                     .operation=WGPUBlendOperation_Add
-//                  }
-//               },
                .format=WGPUTextureFormat_BGRA8Unorm,
                .writeMask=WGPUColorWriteMask_All
             }
@@ -242,17 +174,22 @@ static bool
 contextComputeSceneGeometry(AspectRenderContext *ctx, AspectScene *scene, AspectRenderer *renderer, Error **err)
 {
    float vertices[18] = {
-      0.0, 0.0, 0.5, 1.0, 0.0, 0.0,
-      0.0, -0.5, -0.5, 0.0, 1.0, 0.0,
-      0.0, 0.5, -0.5, 0.0, 0.0, 1.0
+      0.f, 1.f, 0.0, 0.5, 0.0,
+      -1.f, -1.f, -0.0, 0.0, 1.0,
+      1.f, -1.f, -0.0, 1.0, 1.0
    };
+   const size_t OBJECT_BUFFER_SIZE = sizeof(HMM_Mat4) * 1024;
+   ctx->objectBuffer = wgpuDeviceCreateBuffer(renderer->device, &(WGPUBufferDescriptor) {
+      .size=OBJECT_BUFFER_SIZE,
+      .usage=WGPUBufferUsage_CopyDst | WGPUBufferUsage_Storage
+   });
 
    ctx->tempBindGroupLayout =
       wgpuDeviceCreateBindGroupLayout(renderer->device,
                                       &(WGPUBindGroupLayoutDescriptor) {
                                          .label="Bind Group Layout",
-                                         .entryCount=3,
-                                         .entries=(WGPUBindGroupLayoutEntry[3]) {
+                                         .entryCount=4,
+                                         .entries=(WGPUBindGroupLayoutEntry[4]) {
                                             {
                                                .binding=0,
                                                .visibility=WGPUShaderStage_Vertex,
@@ -274,7 +211,15 @@ contextComputeSceneGeometry(AspectRenderContext *ctx, AspectScene *scene, Aspect
                                                .sampler=(WGPUSamplerBindingLayout) {
                                                   .type=WGPUSamplerBindingType_Filtering
                                                }
-                                            }
+                                            },
+                                            {
+                                               .binding=3,
+                                               .visibility=WGPUShaderStage_Vertex,
+                                               .buffer=(WGPUBufferBindingLayout) {
+                                                  .type=WGPUBufferBindingType_ReadOnlyStorage,
+                                                  .hasDynamicOffset=false,
+                                               }
+                                            },
                                          }
                                       });
    ctx->tempBindGroup =
@@ -282,8 +227,8 @@ contextComputeSceneGeometry(AspectRenderContext *ctx, AspectScene *scene, Aspect
                                 &(WGPUBindGroupDescriptor) {
                                    .layout=ctx->tempBindGroupLayout,
                                    .label="Bind Group",
-                                   .entryCount=3,
-                                   .entries=(WGPUBindGroupEntry[3]) {
+                                   .entryCount=4,
+                                   .entries=(WGPUBindGroupEntry[4]) {
                                       {
                                          .binding=0,
                                          .size=ctx->uniformBufferSize,
@@ -296,7 +241,12 @@ contextComputeSceneGeometry(AspectRenderContext *ctx, AspectScene *scene, Aspect
                                       {
                                          .binding=2,
                                          .sampler=ctx->theOnlyMaterial->sampler
-                                      }
+                                      },
+                                      {
+                                         .binding=3,
+                                         .size=OBJECT_BUFFER_SIZE,
+                                         .buffer=ctx->objectBuffer
+                                      },
                                    }
                                 });
    if (ctx->tempBindGroup == NULL)
@@ -308,7 +258,7 @@ contextComputeSceneGeometry(AspectRenderContext *ctx, AspectScene *scene, Aspect
       .mappedAtCreation=true,
       .usage= WGPUBufferUsage_Vertex | WGPUBufferUsage_CopyDst,
       .size=sizeof vertices,
-      .label="Toy Vertex Buffer"
+      .label="Vertex Buffer"
    });
 
 
@@ -316,102 +266,26 @@ contextComputeSceneGeometry(AspectRenderContext *ctx, AspectScene *scene, Aspect
    memcpy(memory, vertices, sizeof vertices);
    wgpuBufferUnmap(ctx->vertexBuffer);
    return true;
-//   assert(ctx);
-//   assert(scene);
-//   if (!sceneBuildGeometry2D(scene, &ctx->vertices, &ctx->indices, err))
-//   {
-//      return false;
-//   }
-//
-//   assert(ctx->vertices);
-//   assert(ctx->indices);
-//
-//   // Vertex Buffer
-//   size_t vertexBufferSize = ctx->vertices->count * sizeof(*ctx->vertices->data);
-//   ctx->vertexBuffer = wgpuDeviceCreateBuffer(ctx->renderer->device, &(WGPUBufferDescriptor) {
-//      .label="Vertex Buffer",
-//      .size=vertexBufferSize,
-//      .usage=WGPUBufferUsage_CopyDst | WGPUBufferUsage_Vertex
-//   });
-//
-//   if (ctx->vertexBuffer == NULL)
-//   {
-//      REPORT_NULL_FAULT(ctx->vertexBuffer, err);
-//      return false;
-//   }
-//   AspectRenderer *renderer = ctx->renderer;
-//   // TODO we may not need to do this here
-//   wgpuQueueWriteBuffer(renderer->queue,
-//                        ctx->vertexBuffer,
-//                        0,
-//                        &ctx->vertices->data,
-//                        ctx->vertices->count * sizeof(*ctx->vertices->data));
-//
-//   // Index Buffer
-//   ctx->indexBuffer = wgpuDeviceCreateBuffer(renderer->device, &(WGPUBufferDescriptor) {
-//      .label="Index Buffer",
-//      .size=ctx->indices->count * sizeof(*ctx->indices->data),
-//      .usage=WGPUBufferUsage_CopyDst | WGPUBufferUsage_Index
-//   });
-//   if (ctx->indexBuffer == NULL)
-//   {
-//      REPORT_NULL_FAULT(ctx->indexBuffer, err);
-//      return false;
-//   }
-//
-//   // Geometry Bind Group Layout
-//   ctx->geometryBindGroupLayout = wgpuDeviceCreateBindGroupLayout(
-//      renderer->device,
-//      &(WGPUBindGroupLayoutDescriptor) {
-//         .entryCount=1,
-//         .entries=(WGPUBindGroupLayoutEntry[]) {
-//            {
-//               .binding=0,
-//               .visibility=WGPUShaderStage_Vertex
-//            },
-//            {
-//               .binding=1,
-//               .visibility=WGPUShaderStage_Vertex,
-//               .buffer={
-//                  .type=WGPUBufferBindingType_ReadOnlyStorage,
-//                  .hasDynamicOffset=false
-//               }
-//            }
-//         }
-//      });
-//
-//   if (ctx->geometryBindGroupLayout == NULL)
-//   {
-//      REPORT_NULL_FAULT(ctx->geometryBindGroupLayout, err);
-//      return false;
-//   }
-//
-//
-//   ctx->geometryBindGroup = wgpuDeviceCreateBindGroup(renderer->device, &(WGPUBindGroupDescriptor) {
-//      .layout = ctx->geometryBindGroupLayout,
-//      .label = "Vertex Bind Group",
-//      .entryCount = 1,
-//      .entries = (WGPUBindGroupEntry[]) {
-//         {
-//            .binding=0,
-//            .buffer=ctx->uniformBuffer,
-//            .offset=0,
-//            .size=ctx->uniformBufferSize
-//         },
-//         {
-//            .binding=1,
-//            .buffer=ctx->vertexBuffer,
-//            .offset=0,
-//            .size=vertexBufferSize
-//         }
-//      }
-//   });
-//   if (ctx->geometryBindGroup == NULL)
-//   {
-//      REPORT_NULL_FAULT(ctx->geometryBindGroup, err);
-//      return false;
-//   }
-   return true;
+}
+
+#include "Behavior.h"
+
+struct SceneNode
+demoCreateSceneNode(char *label, float x)
+{
+   struct Actor *actor = malloc(sizeof(struct Actor));
+   struct RotateBehavior *rotate = malloc(sizeof(struct RotateBehavior));
+   rotate->behavior.kind = ASPECT_BEHAVIOR_TYPE_ROTATE;
+   rotate->eulerAngles = HMM_V3(0, .1f, 0);
+   actor->behaviorCount = 1;
+   actor->behaviors = (struct Behavior *) rotate;
+   return (struct SceneNode) {
+      .label=label,
+      .actor=actor,
+      .position=HMM_V3(x, 0, 0),
+      .rotation=HMM_Q(0, 0, 0, 1),
+      .scale=HMM_V3(1, 1, 1)
+   };
 }
 
 AspectRenderContext *
@@ -431,9 +305,15 @@ aspectRenderContextNew(AspectRenderer *renderer,
 
    ctx->renderer = renderer;
 
-
+   ctx->nodes = malloc(3 * sizeof(struct SceneNode));
+   ctx->nodeCount = 3;
+   ctx->nodes[0] = demoCreateSceneNode("Node 1", -2.f);
+   ctx->nodes[1] = demoCreateSceneNode("Node 2", 0.f);
+   ctx->nodes[2] = demoCreateSceneNode("Node 3", 2.f);
+   //TODO get the depth when loading the scene
+   ctx->sceneDepth = 1;
    // Uniform Buffer
-   ctx->uniformBufferSize = 64 * 3;
+   ctx->uniformBufferSize = sizeof(HMM_Mat4) * 2;
    ctx->uniformBuffer = wgpuDeviceCreateBuffer(renderer->device, &(WGPUBufferDescriptor) {
       .label="Uniform Buffer",
       .size=ctx->uniformBufferSize,
@@ -456,96 +336,13 @@ aspectRenderContextNew(AspectRenderer *renderer,
    {
       goto onFailure;
    }
-
-//   wgpuQueueWriteBuffer(renderer->queue, ctx->uniformBuffer, 0, ctx->uniformBuffer, ctx->uniformBufferSize);
-
-//   // Materials Bind group
-//   ctx->materialsBindGroupLayout = wgpuDeviceCreateBindGroupLayout(
-//      renderer->device,
-//      &(WGPUBindGroupLayoutDescriptor) {
-//         .entryCount=1,
-//         .entries=(WGPUBindGroupLayoutEntry[]) {
-//            {
-//               .binding=0,
-//               .visibility=WGPUShaderStage_Fragment,
-//            },
-//            {
-//               .binding=1,
-//               .visibility=WGPUShaderStage_Fragment,
-//            }
-//         }
-//      });
-//
-//   if (ctx->materialsBindGroupLayout == NULL)
-//   {
-//      REPORT_NULL_FAULT(ctx->materialsBindGroupLayout, err);
-//      goto onFailure;
-//   }
-//
-//
-//   ctx->materialsBindGroup = wgpuDeviceCreateBindGroup(renderer->device, &(WGPUBindGroupDescriptor) {
-//      .layout = ctx->materialsBindGroupLayout,
-//      .label = "Materials Bind Group",
-//      .entryCount = 1,
-//      .entries = (WGPUBindGroupEntry[]) {
-//         {
-//            .binding=0,
-//            .buffer=ctx->uniformBuffer,
-//            .offset=0,
-//            .size=ctx->uniformBufferSize
-//         }
-//      }
-//   });
-//   if (ctx->materialsBindGroup == NULL)
-//   {
-//      REPORT_NULL_FAULT(ctx->bindGroup, err);
-//      goto onFailure;
-//   }
-
-
-//   ctx->depthTexture = wgpuDeviceCreateTexture(renderer->device, &(WGPUTextureDescriptor) {
-//      .dimension=WGPUTextureDimension_2D,
-//      .format=WGPUTextureFormat_Depth24Plus,
-//      .mipLevelCount=1,
-//      .sampleCount=1,
-//      .size={640, 480, 1},
-//      .usage=WGPUTextureUsage_CopyDst,
-//      .viewFormatCount=1,
-//      .viewFormats=(WGPUTextureFormat[]) {
-//         WGPUTextureFormat_Depth24Plus
-//      },
-//   });
-//   if (ctx->depthTexture == NULL)
-//   {
-//      REPORT_NULL_FAULT(ctx->depthTexture, err);
-//      goto onFailure;
-//   }
-
-//   ctx->depthTextureView = wgpuTextureCreateView(ctx->depthTexture, &(WGPUTextureViewDescriptor) {
-//      .aspect=WGPUTextureAspect_DepthOnly,
-//      .baseArrayLayer=0,
-//      .arrayLayerCount=1,
-//      .baseMipLevel=0,
-//      .mipLevelCount=1,
-//      .dimension=WGPUTextureViewDimension_2D,
-//      .format=WGPUTextureFormat_Depth24Plus
-//   });
-//   if (ctx->depthTextureView == NULL)
-//   {
-//      REPORT_NULL_FAULT(ctx->depthTextureView, err);
-//      goto onFailure;
-//   }
-//   ctx->depthStencilAttachment = (WGPURenderPassDepthStencilAttachment) {
-//      .depthClearValue=1.0f, // The initial value of the depth buffer, meaning "far"
-//      .depthLoadOp=WGPULoadOp_Clear,
-//      .depthReadOnly = false,
-//      .depthStoreOp=WGPUStoreOp_Store,
-//      .stencilLoadOp = WGPULoadOp_Undefined,
-//      .stencilReadOnly = true,
-//      .stencilStoreOp = WGPUStoreOp_Undefined,
-//      .view = ctx->depthTextureView,
-//   };
-
+   HMM_Vec3 position = HMM_V3(0, 0, 0);
+   ctx->camera = aspectCameraNew(position, 0, 0, err);
+   if (ctx->camera == NULL)
+   {
+      REPORT_NULL_FAULT(ctx->camera, err);
+      goto onFailure;
+   }
    ctx->pipeline = createRenderPipeline(renderer, ctx, err);
    return ctx;
 
@@ -559,36 +356,40 @@ bool
 aspectRenderContextRender(AspectRenderContext *ctx, Error **err)
 {
 
-   WGPUTextureView currentTexture = NULL;
-   WGPUCommandEncoder commandEncoder = NULL;
-   WGPURenderPassEncoder renderPass = NULL;
-
    if (ctx == NULL)
    {
       REPORT_NULL_FAULT(ctx, err);
       return false;
    }
-   ctx->t += .01f;
-   if (ctx->t > 2 * M_PI)
-   {
-      ctx->t = 0;
-   }
-   HMM_Mat4 projection = HMM_Perspective_RH_ZO(M_PI_4, 800.f / 600.f, .1f, 10.f);
-   HMM_Mat4 view = HMM_LookAt_RH(HMM_V3(-2, 0, 2), HMM_V3(0, 0, 0), HMM_V3(0, 0, 1));
-   HMM_Mat4 model = HMM_Rotate_RH(ctx->t, HMM_V3(0, 0, 1));
-   wgpuQueueWriteBuffer(ctx->renderer->queue, ctx->uniformBuffer, 0, &model, sizeof model);
-   wgpuQueueWriteBuffer(ctx->renderer->queue, ctx->uniformBuffer, 64, &view, sizeof view);
-   wgpuQueueWriteBuffer(ctx->renderer->queue, ctx->uniformBuffer, 128, &projection, sizeof projection);
+
+   WGPUTextureView currentTexture = NULL;
+   WGPUCommandEncoder commandEncoder = NULL;
+   WGPURenderPassEncoder renderPass = NULL;
+
+//   ctx->t += .01f;
+//   if (ctx->t > 2 * M_PI)
+//   {
+//      ctx->t = 0;
+//   }
+//
+   aspectCameraUpdate(ctx->camera);
 
    AspectRenderer *renderer = ctx->renderer;
    assert(renderer);
 
-   currentTexture = wgpuSwapChainGetCurrentTextureView(renderer->swapChain);
-   if (currentTexture == NULL)
+
+   // Model data
+   for (size_t i = 0; i < ctx->nodeCount; i++)
    {
-      REPORT_NULL_FAULT(currentTexture, err);
-      return false;
+      HMM_Mat4 model = aspectSceneNodeCalculateModel(&ctx->nodes[i]);
+      wgpuQueueWriteBuffer(renderer->queue, ctx->objectBuffer, i * sizeof(model), &model, sizeof(model));
    }
+   // Camera View
+   HMM_Mat4 view = HMM_LookAt_RH(HMM_V3(0, 0, -3), HMM_V3(0, 0, 0), HMM_V3(0, 1, 0));
+   wgpuQueueWriteBuffer(ctx->renderer->queue, ctx->uniformBuffer, 0, &view, sizeof view);
+   // Projection
+   HMM_Mat4 projection = HMM_Perspective_RH_ZO(M_PI_4, 800.f / 600.f, .1f, 10.f);
+   wgpuQueueWriteBuffer(ctx->renderer->queue, ctx->uniformBuffer, 64, &projection, sizeof projection);
 
    commandEncoder = wgpuDeviceCreateCommandEncoder(
       renderer->device,
@@ -601,16 +402,24 @@ aspectRenderContextRender(AspectRenderContext *ctx, Error **err)
       goto onFailure;
    }
 
+   currentTexture = wgpuSwapChainGetCurrentTextureView(renderer->swapChain);
+   if (currentTexture == NULL)
+   {
+      REPORT_NULL_FAULT(currentTexture, err);
+      return false;
+   }
+
    renderPass = wgpuCommandEncoderBeginRenderPass(
       commandEncoder,
       &(WGPURenderPassDescriptor) {
+         .label="Render Pass",
          .colorAttachmentCount=1,
          .colorAttachments=(WGPURenderPassColorAttachment[1]) {
             {
                .view=currentTexture,
                .loadOp=WGPULoadOp_Clear,
                .storeOp=WGPUStoreOp_Store,
-               .clearValue={.2, 0.4, 0.2, .5}
+               .clearValue={.2, 0.4, 0.2, 1.}
             }
          },
          //.depthStencilAttachment = &ctx->depthStencilAttachment
@@ -621,10 +430,11 @@ aspectRenderContextRender(AspectRenderContext *ctx, Error **err)
       REPORT_NULL_FAULT(renderPass, err);
       goto onFailure;
    }
+
    wgpuRenderPassEncoderSetPipeline(renderPass, ctx->pipeline);
-   wgpuRenderPassEncoderSetVertexBuffer(renderPass, 0, ctx->vertexBuffer, 0, 72);
+   wgpuRenderPassEncoderSetVertexBuffer(renderPass, 0, ctx->vertexBuffer, 0, 60);
    wgpuRenderPassEncoderSetBindGroup(renderPass, 0, ctx->tempBindGroup, 0, NULL);
-   wgpuRenderPassEncoderDraw(renderPass, 3, 1, 0, 0);
+   wgpuRenderPassEncoderDraw(renderPass, 3, ctx->nodeCount, 0, 0);
    wgpuRenderPassEncoderEnd(renderPass);
    WGPUCommandBuffer command = wgpuCommandEncoderFinish(commandEncoder,
                                                         &(WGPUCommandBufferDescriptor) {.label="Command Buffer"});
@@ -636,4 +446,44 @@ aspectRenderContextRender(AspectRenderContext *ctx, Error **err)
    onFailure:
 
    return false;
+}
+
+void
+aspectRenderContextOnUpdate(AspectRenderContext *ctx)
+{
+   Error *todo = NULL;
+   struct SceneNodeIterator *it = aspectRenderContextNewSceneNodeIterator(ctx, &todo);
+   struct SceneNode *node = aspectSceneNodeIteratorNext(it);
+   while (node != NULL)
+   {
+      aspectSceneNodeOnUpdate(node);
+      node = aspectSceneNodeIteratorNext(it);
+   }
+   aspectSceneNodeIteratorDestroy(it);
+}
+
+void
+aspectRenderContextHandleKeypress(AspectRenderContext *ctx, int key, int scancode, int action, int mods)
+{
+   printf("key=%d code=%d action=%d mods=%d\n", key, scancode, action, mods);
+//   switch(key)
+//   {
+//      case GLFW_KEY_RIGHT:
+//         switch (action)
+//         {
+//            case GLFW_PRESS:
+//            case GLFW_REPEAT:
+//               ctx->camera->eulers
+//         }
+//      case GLFW_KEY_UP:
+//         switch (action)
+//         {
+//            case GLFW_PRESS:
+//            case GLFW_REPEAT:
+//
+//
+//         }
+//
+//   }
+//   ctx->camera->
 }

@@ -32,7 +32,8 @@ typedef enum
    PFM_ERR_NONE = 0,
    PFM_ERR_ALLOC_FAILED = 1,
    PFM_ERR_NULL_FAULT = 2,
-   PFM_ERR_IO_FAULT = 3
+   PFM_ERR_IO_FAULT = 3,
+   PFM_ERR_INVALID_KIND = 4
 } PlatformErrorType;
 
 typedef struct ErrorArgs

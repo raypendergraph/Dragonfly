@@ -27,24 +27,37 @@ link_directories(
 )
 
 add_executable(learning
-        Src/main.c
+        Src/Aspect/Actor.h
         Src/Aspect/Aspect.h
-        Src/Aspect/MetalAdapter.m
-        Src/Aspect/Scene.c
-        Src/Aspect/Renderer.c
-        Src/Aspect/Camera.c
-        Src/Aspect/Material.c
-        Src/Aspect/Internal.h
-        Src/Aspect/Types.h
         Src/Aspect/AspectGLFW.c
-        Src/Aspect/RenderContext.c
-        Src/Aspect/Scene.h
-        Src/Aspect/Renderer.h
+        Src/Aspect/Behavior.h
+        Src/Aspect/Behavior.c
+        Src/Aspect/Camera.c
+        Src/Aspect/Camera.h
+        Src/Aspect/Entity.h
+        Src/Aspect/Graph.c
+        Src/Aspect/Internal.h
+        Src/Aspect/Material.c
+        Src/Aspect/Material.h
+        Src/Aspect/MetalAdapter.m
         Src/Aspect/PlatformSpecifics.c
         Src/Aspect/PlatformSpecifics.h
-        Src/Aspect/Material.h
+        Src/Aspect/RenderBatch.h
+        Src/Aspect/RenderContext.c
         Src/Aspect/RenderContext.h
+        Src/Aspect/Renderer.c
+        Src/Aspect/Renderer.h
+        Src/Aspect/Scene.c
+        Src/Aspect/Scene.h
+        Src/Aspect/SceneNode.h
+        Src/Aspect/SceneNode.c
+        Src/Aspect/SceneNodeIterator.c
+        Src/Aspect/SceneNodeIterator.h
+        Src/Aspect/StaticMesh.c
+        Src/Aspect/Transform.c
+        Src/Aspect/Types.h
         Src/Aspect/WGPUUtils.c
+        Src/main.c
 )
 
 add_subdirectory(Modules/Platform)

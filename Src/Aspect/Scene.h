@@ -4,11 +4,7 @@
 #include <stdbool.h>
 #include "Types.h"
 
-typedef struct AspectEntity
-{
-} AspectEntity;
-
-typedef struct
+typedef struct AspectEntityGroup
 {
    size_t size;
    AspectEntity data[];
