@@ -1,0 +1,9 @@
+class InputSettings {
+    start() {
+
+    }
+
+    stop() {
+
+    }
+}
